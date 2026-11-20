@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff5c00">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shoulders Tracker">
+<title>Shoulders & Strength Tracker</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #232733;
+  --border: #2e3340;
+  --text: #f0f2f5;
+  --text2: #a0a8b8;
+  --muted: #6b7280;
+  --accent: #ff5c00;
+  --accent2: #ff7a33;
+  --accent-soft: rgba(255,92,0,.15);
+  --green: #10b981;
+  --blue: #3b82f6;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(15,17,23,.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 0;
+}
+.header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.logo-text { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+.logo-title { font-size: 18px; font-weight: 800; letter-spacing: -.3px; }
+.tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 10px; }
+.tab {
+  flex: 1; min-width: 70px; padding: 10px 8px; cursor: pointer; font-size: 12px; font-weight: 600;
+  color: var(--muted); background: transparent; border: none; border-radius: 10px;
+  transition: all .2s;
+}
+.tab.active { background: var(--accent-soft); color: var(--accent); }
+.content { padding: 16px; max-width: 480px; margin: 0 auto; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.day-btn {
+  width: 100%; text-align: left; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 10px; cursor: pointer; color: var(--text);
+  transition: all .2s;
+}
+.day-btn:hover, .day-btn.active { border-color: var(--accent); background: var(--accent-soft); }
+.day-title { font-weight: 700; font-size: 16px; }
+.day-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.exercise-item {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.ex-name { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+.set-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.set-row input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px; color: var(--text); font-size: 15px;
+}
+.set-row input:focus { outline: none; border-color: var(--accent); }
+.btn {
+  background: var(--accent); color: white; border: none; border-radius: 10px;
+  padding: 12px 16px; font-weight: 700; cursor: pointer; font-size: 14px;
+}
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-small { padding: 8px 12px; font-size: 12px; }
+.add-set { margin-top: 6px; }
+.session-card { margin-bottom: 12px; }
+.session-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.pr-badge { background: var(--green); color: white; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 700; }
+.empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="logo">
+      <div class="logo-icon">💪</div>
+      <div>
+        <div class="logo-text">Shoulders Focus</div>
+        <div class="logo-title">Strength Tracker</div>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('train')">Allenamento</button>
+    <button class="tab" onclick="switchTab('history')">Storico</button>
+    <button class="tab" onclick="switchTab('prs')">PR</button>
+    <button class="tab" onclick="switchTab('data')">Dati</button>
+  </div>
+</div>
+
+<div class="content" id="app"></div>
+
+<script>
+const DAYS = {
+  A: {
+    name: "A · Upper Strength + Bicipiti",
+    sub: "Panca · Trazioni · OHP · Bicipiti",
+    exercises: [
+      { id: "bench", name: "Panca piana", target: "4×5 · 95-100 kg" },
+      { id: "pullups", name: "Trazioni", target: "4×5-6" },
+      { id: "ohp", name: "OHP manubri", target: "4×6-8 · 22-24 kg" },
+      { id: "row", name: "Rematore / T-bar", target: "3×8" },
+      { id: "lateral", name: "Lateral raise cavo", target: "3×12-15 · 10-12 kg" },
+      { id: "facepull", name: "Face Pull", target: "3×15" },
+      { id: "curl", name: "Curl manubri / EZ", target: "3×10-12" },
+      { id: "hammer", name: "Curl hammer", target: "2×10-12" },
+    ]
+  },
+  B: {
+    name: "B · Lower Strength",
+    sub: "V-Squat · RDL · Leg Ext · Hip Thrust",
+    exercises: [
+      { id: "vsquat", name: "V-Squat / Squat", target: "4×5-6 · 160-180 kg" },
+      { id: "rdl", name: "Romanian Deadlift", target: "3×6-8" },
+      { id: "legext", name: "Leg Extension", target: "3×12-15" },
+      { id: "legpress", name: "Leg Press piedi alti", target: "3×8-10 · 180-200 kg" },
+      { id: "hipthrust", name: "Hip Thrust", target: "3×8-10 · 90-100 kg" },
+      { id: "legcurl", name: "Leg Curl", target: "3×10-12" },
+      { id: "calf", name: "Calf Raise", target: "4×12" },
+    ]
+  },
+  C: {
+    name: "C · Shoulders 3-7 + Tricipiti",
+    sub: "Laterali 3-7 · Rear · Lat · Tricipiti",
+    exercises: [
+      { id: "incline", name: "Panca inclinata manubri", target: "3×8-10" },
+      { id: "latmachine", name: "Lat Machine", target: "4×10-12 · 60-70 kg" },
+      { id: "cablerow", name: "Cable Row seduto", target: "3×10-12" },
+      { id: "lateral37", name: "3-7 Lateral Raise cavo", target: "2-3 sequenze · 10-12 kg" },
+      { id: "reversepec", name: "Reverse Pec Deck", target: "4×12-15" },
+      { id: "arnold", name: "Arnold / OHP manubri", target: "3×8-10" },
+      { id: "triceps", name: "Tricipiti corda", target: "3×12" },
+      { id: "skull", name: "Skull crusher / overhead", target: "2×12" },
+    ]
+  },
+  D: {
+    name: "D · Lower Volume",
+    sub: "Opzionale",
+    exercises: [
+      { id: "deadlift", name: "Stacco / RDL", target: "3×5" },
+      { id: "bulgarian", name: "Bulgarian split squat", target: "3×8-10" },
+      { id: "hipthrust2", name: "Hip Thrust", target: "3×10-12" },
+      { id: "legcurl2", name: "Leg Curl", target: "3×12-15" },
+      { id: "calf2", name: "Calf seduto", target: "4×15" },
+      { id: "hyper", name: "Hyperextension", target: "3×12" },
+    ]
+  }
+};
+
+let currentTab = 'train';
+let currentDay = null;
+let currentSession = null;
+let DB = { sessions: [] };
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem('shoulders_tracker_v1');
+    if (raw) DB = JSON.parse(raw);
+  } catch (e) {}
+  if (!DB.sessions) DB.sessions = [];
+}
+function saveDB() {
+  localStorage.setItem('shoulders_tracker_v1', JSON.stringify(DB));
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
+}
+
+function startDay(dayKey) {
+  currentDay = dayKey;
+  currentSession = {
+    id: Date.now(),
+    date: new Date().toISOString().slice(0, 10),
+    day: dayKey,
+    exercises: DAYS[dayKey].exercises.map(ex => ({
+      id: ex.id,
+      name: ex.name,
+      sets: [{ weight: '', reps: '' }]
+    }))
+  };
+  render();
+}
+
+function addSet(exIndex) {
+  currentSession.exercises[exIndex].sets.push({ weight: '', reps: '' });
+  render();
+}
+
+function updateSet(exIndex, setIndex, field, value) {
+  currentSession.exercises[exIndex].sets[setIndex][field] = value;
+}
+
+function saveSession() {
+  // Clean empty sets
+  currentSession.exercises.forEach(ex => {
+    ex.sets = ex.sets.filter(s => s.weight || s.reps);
+  });
+  currentSession.exercises = currentSession.exercises.filter(ex => ex.sets.length > 0);
+  if (currentSession.exercises.length === 0) {
+    alert('Nessun dato inserito');
+    return;
+  }
+  DB.sessions.unshift(currentSession);
+  saveDB();
+  currentDay = null;
+  currentSession = null;
+  currentTab = 'history';
+  render();
+  alert('Allenamento salvato!');
+}
+
+function getPRs() {
+  const prs = {};
+  DB.sessions.forEach(session => {
+    session.exercises.forEach(ex => {
+      ex.sets.forEach(set => {
+        const w = parseFloat(set.weight);
+        const r = parseInt(set.reps);
+        if (!w || !r) return;
+        const key = ex.name;
+        const volume = w * r;
+        if (!prs[key] || volume > prs[key].volume) {
+          prs[key] = { weight: w, reps: r, volume, date: session.date };
+        }
+      });
+    });
+  });
+  return prs;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (currentTab === 'train') {
+    if (!currentDay) {
+      app.innerHTML = `
+        <div style="margin-bottom:16px;font-size:13px;color:var(--text2)">Scegli il giorno di allenamento</div>
+        ${Object.entries(DAYS).map(([key, day]) => `
+          <button class="day-btn" onclick="startDay('${key}')">
+            <div class="day-title">${day.name}</div>
+            <div class="day-sub">${day.sub}</div>
+          </button>
+        `).join('')}
+      `;
+    } else {
+      const day = DAYS[currentDay];
+      app.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div>
+            <div style="font-weight:800;font-size:18px">${day.name}</div>
+            <div style="font-size:12px;color:var(--text2)">${new Date().toLocaleDateString('it-IT')}</div>
+          </div>
+          <button class="btn btn-secondary btn-small" onclick="currentDay=null;render()">Annulla</button>
+        </div>
+        ${currentSession.exercises.map((ex, i) => `
+          <div class="exercise-item">
+            <div class="ex-name">${ex.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${DAYS[currentDay].exercises[i].target}</div>
+            ${ex.sets.map((set, si) => `
+              <div class="set-row">
+                <input type="number" step="0.5" placeholder="kg" value="${set.weight}" 
+                  onchange="updateSet(${i},${si},'weight',this.value)" inputmode="decimal">
+                <input type="number" placeholder="reps" value="${set.reps}" 
+                  onchange="updateSet(${i},${si},'reps',this.value)" inputmode="numeric">
+              </div>
+            `).join('')}
+            <button class="btn btn-secondary btn-small add-set" onclick="addSet(${i})">+ Serie</button>
+          </div>
+        `).join('')}
+        <button class="btn" style="width:100%;margin-top:8px" onclick="saveSession()">Salva Allenamento</button>
+      `;
+    }
+  } else if (currentTab === 'history') {
+    if (DB.sessions.length === 0) {
+      app.innerHTML = '<div class="empty">Nessun allenamento ancora.<br>Inizia dal tab Allenamento.</div>';
+    } else {
+      app.innerHTML = DB.sessions.map(s => `
+        <div class="card session-card">
+          <div class="session-header">
+            <div>
+              <strong>${DAYS[s.day]?.name || s.day}</strong>
+              <div style="font-size:12px;color:var(--text2)">${new Date(s.date).toLocaleDateString('it-IT')}</div>
+            </div>
+          </div>
+          ${s.exercises.map(ex => `
+            <div style="font-size:13px;margin:4px 0">
+              <strong>${ex.name}</strong>: ${ex.sets.map(set => `${set.weight||'?'}×${set.reps||'?'}`).join(', ')}
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+  } else if (currentTab === 'prs') {
+    const prs = getPRs();
+    const entries = Object.entries(prs);
+    if (entries.length === 0) {
+      app.innerHTML = '<div class="empty">Nessun PR ancora.<br>Completa qualche allenamento.</div>';
+    } else {
+      app.innerHTML = entries.sort((a,b) => b[1].volume - a[1].volume).map(([name, pr]) => `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong>${name}</strong>
+            <span class="pr-badge">PR</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;margin:6px 0">${pr.weight} kg × ${pr.reps}</div>
+          <div style="font-size:12px;color:var(--muted)">${new Date(pr.date).toLocaleDateString('it-IT')}</div>
+        </div>
+      `).join('');
+    }
+  } else if (currentTab === 'data') {
+    app.innerHTML = `
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:8px">Backup dati</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px">I dati sono salvati solo su questo browser. Esporta un backup regolarmente.</p>
+        <button class="btn" style="width:100%;margin-bottom:8px" onclick="exportData()">Esporta JSON</button>
+        <button class="btn btn-secondary" style="width:100%" onclick="document.getElementById('importFile').click()">Importa JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+      </div>
+      <div class="card">
+        <div style="font-size:13px;color:var(--muted)">Sessioni totali: <strong style="color:var(--text)">${DB.sessions.length}</strong></div>
+      </div>
+    `;
+  }
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `shoulders-tracker-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.sessions) {
+        if (confirm('Importare? Sostituirà i dati attuali.')) {
+          DB = data;
+          saveDB();
+          render();
+          alert('Importato!');
+        }
+      }
+    } catch {
+      alert('File non valido');
+    }
+  };
+  reader.readAsText(file);
+}
+
+loadDB();
+render();
+</script>
+</body>
+</html>
